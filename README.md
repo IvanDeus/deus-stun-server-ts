@@ -1,14 +1,22 @@
-# deus-stun-server-ts
-A STUN (Session Traversal Utilities for NAT) server for RTC calls
+# deus-stun-server-ts  
+A high-performance STUN (Session Traversal Utilities for NAT) server implementation for WebRTC and real-time communication applications.
 
-## Prerequisites
-Make sure you have Bun installed: `curl -fsSL https://bun.sh/install | bash`
-
-## To run STUN server:
-Run with: `bun run stun-server.ts`
-
-## To use pm2 for process management in production create ecosystem.config.js:
+## Prerequisites  
+Ensure you have [Bun](https://bun.sh) installed:  
+```bash
+curl -fsSL https://bun.sh/install | bash
 ```
+
+## Running the STUN Server  
+Start the server with:  
+```bash
+bun run stun-server.ts
+```
+
+## Production Deployment with PM2  
+For process management in production environments, create an `ecosystem.config.js` file:  
+
+```javascript
 // ecosystem.config.js
 module.exports = {
   apps: [{
@@ -23,6 +31,12 @@ module.exports = {
   }]
 };
 ```
-And use it: `pm2 start ecosystem.config.js`
 
-2025 [ ivan deus ]
+Then start the service:  
+```bash
+pm2 start ecosystem.config.js
+```
+
+---
+
+2025 [ivan deus]
