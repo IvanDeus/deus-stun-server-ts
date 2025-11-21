@@ -1,7 +1,7 @@
 // stun-server.ts
 // A basic STUN server implementation in TypeScript with Bun
 // Handles STUN Binding Requests and responds with the client's public IP and port
-// Rate limit: Pause for 3 seconds if more than 30 requests are received in 10 seconds
+// Rate limit: Pause for 3 seconds if more than 300 requests are received in 10 seconds
 
 // STUN constants
 const STUN_MAGIC_COOKIE = 0x2112A442;
@@ -14,7 +14,7 @@ const BIND_IP = '0.0.0.0'; // Listen on all interfaces
 const BIND_PORT = 3478;    // Standard STUN port
 
 // Rate limiting constants
-const MAX_REQUESTS = 30;         // Max requests allowed in window
+const MAX_REQUESTS = 300;         // Max requests allowed in window
 const TIME_WINDOW = 10 * 1000;   // 10 seconds in milliseconds
 const PAUSE_DURATION = 3 * 1000; // 3 seconds pause in milliseconds
 
