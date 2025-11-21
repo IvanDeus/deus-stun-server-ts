@@ -1,12 +1,13 @@
 # deus-stun-server-ts
 A STUN (Session Traversal Utilities for NAT) server for RTC calls
 
-## To run this:
+## Prerequisites
 Make sure you have Bun installed: `curl -fsSL https://bun.sh/install | bash`
 
+## To run STUN server:
 Run with: `bun run stun-server.ts`
 
-## To use pm2 for process management in production crete ecosystem.config.js:
+## To use pm2 for process management in production create ecosystem.config.js:
 ```
 // ecosystem.config.js
 module.exports = {
