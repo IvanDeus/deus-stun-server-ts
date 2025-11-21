@@ -11,7 +11,6 @@ const STUN_MAGIC_COOKIE = 0x2112A442;
 const STUN_BINDING_REQUEST = 0x0001;
 const STUN_BINDING_RESPONSE = 0x0101;
 const STUN_ATTR_XOR_MAPPED_ADDRESS = 0x0020;
-
 // --- Types ---
 interface ParsedStunMessage {
   type: number;
@@ -19,7 +18,6 @@ interface ParsedStunMessage {
   transactionId: Buffer;
   attributes: Buffer;
 }
-
 // --- Rate Limiter Class ---
 class RateLimiter {
   private timestamps: number[] = [];
@@ -36,20 +34,16 @@ class RateLimiter {
 
   public check(): boolean {
     if (this.isPaused) return false;
-
     const now = Date.now();
     // Prune old timestamps
     this.timestamps = this.timestamps.filter(ts => now - ts < this.timeWindow);
-    
     // Add new timestamp
     this.timestamps.push(now);
-
     // Check limit
     if (this.timestamps.length > this.maxRequests) {
       this.triggerPause();
       return false;
     }
-
     return true;
   }
 
@@ -74,7 +68,6 @@ class RateLimiter {
 }
 
 // --- Helper Functions ---
-
 function getTimestamp(): string {
   return new Date().toLocaleString('en-US');
 }
@@ -96,38 +89,30 @@ function parseStunMessage(data: Buffer): ParsedStunMessage | null {
 function createXorMappedAddress(family: number, port: number, address: string, transactionId: Buffer): Buffer {
   // Structure: Type (2) + Length (2) + Reserved (1) + Family (1) + X-Port (2) + X-Address (4)
   const buf = Buffer.alloc(12); 
-  
   // Attribute Header
   buf.writeUInt16BE(STUN_ATTR_XOR_MAPPED_ADDRESS, 0);
   buf.writeUInt16BE(8, 2); // Length of value part (1+1+2+4)
-
   // Value
   buf.writeUInt8(0, 4);      // Reserved
   buf.writeUInt8(family, 5); // Family (1 for IPv4)
-
   // XOR Port
   const xorPort = port ^ (STUN_MAGIC_COOKIE >> 16);
   buf.writeUInt16BE(xorPort, 6);
-
   // XOR Address (IPv4)
   // Note: The original logic XORs against Cookie AND TransactionID. 
   // Standard RFC5389 for IPv4 usually only XORs against the Cookie.
   // I have kept your original logic intact to ensure client compatibility.
   const addrBytes = address.split('.').map(Number);
   const addrBuf = Buffer.from(addrBytes);
-
   // XOR with Magic Cookie
   for (let i = 0; i < 4; i++) {
     addrBuf[i] ^= (STUN_MAGIC_COOKIE >> (24 - i * 8)) & 0xFF;
   }
-
   // XOR with Transaction ID (from original script)
   for (let i = 0; i < transactionId.length && i < 4; i++) {
      addrBuf[i] ^= transactionId[i];
   }
-  
   addrBuf.copy(buf, 8);
-
   return buf;
 }
 
@@ -140,7 +125,6 @@ function createStunResponse(type: number, transactionId: Buffer, attributes: Buf
   header.writeUInt16BE(bodyLength, 2);
   header.writeUInt32BE(STUN_MAGIC_COOKIE, 4);
   transactionId.copy(header, 8);
-
   return Buffer.concat([header, attrBuf]);
 }
 
