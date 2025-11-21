@@ -145,12 +145,6 @@ function createStunResponse(type: number, transactionId: Buffer, attributes: Buf
 }
 
 // --- Main Server Logic ---
-
-
-
-[Image of STUN protocol handshake]
-
-
 const server = dgram.createSocket('udp4');
 const limiter = new RateLimiter(30, 10000, 3000);
 
@@ -159,26 +153,21 @@ server.on('message', (msg: Buffer, rinfo: RemoteInfo) => {
   if (!limiter.check()) {
     // Only log the drop if we aren't already in a "paused" state to avoid log spam
     // or if you want to see every dropped packet:
-    // console.log(`[${getTimestamp()}] Dropping ${rinfo.address}`);
+    console.log(`[${getTimestamp()}] Dropping ${rinfo.address}`);
     return;
   }
-
   // 2. Parse Message
   const parsed = parseStunMessage(msg);
-  
   // Validate STUN Binding Request
   if (!parsed || parsed.type !== STUN_BINDING_REQUEST) {
     console.log(`[${getTimestamp()}] Invalid/Non-binding request from ${rinfo.address}:${rinfo.port}`);
     return;
   }
-
   // 3. Create Attribute (XOR-MAPPED-ADDRESS)
   const family = 1; // IPv4
   const xorAttr = createXorMappedAddress(family, rinfo.port, rinfo.address, parsed.transactionId);
-
   // 4. Create Response
   const response = createStunResponse(STUN_BINDING_RESPONSE, parsed.transactionId, [xorAttr]);
-
   // 5. Send
   server.send(response, rinfo.port, rinfo.address, (err) => {
     if (err) {
