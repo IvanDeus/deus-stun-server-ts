@@ -1,5 +1,5 @@
 //stun-server.ts
-//rate limit 300 requests
+//rate limit 300 requests per 10 sec and 3 sec cool down
 import dgram from 'node:dgram';
 import type { RemoteInfo } from 'node:dgram';
 
