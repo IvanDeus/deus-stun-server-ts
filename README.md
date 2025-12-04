@@ -39,4 +39,4 @@ pm2 start ecosystem.config.js
 
 ---
 
-2025 [ivan deus]
+2025 [ ivan deus ]
