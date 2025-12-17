@@ -1,11 +1,36 @@
 //stun-server.ts
-//rate limit 300 requests per 10 sec and 3 sec cool down
+//rate limit 15000 requests per 10 sec and 3 sec cool down
 import dgram from 'node:dgram';
 import type { RemoteInfo } from 'node:dgram';
-
-// --- Constants ---
-const BIND_IP = '0.0.0.0';
-const BIND_PORT = 3478;
+import fs from 'node:fs';
+import path from 'node:path';
+// --- Load Configuration ---
+let config: any;
+try {
+  const configPath = path.join(__dirname, 'config.json');
+  const configData = fs.readFileSync(configPath, 'utf-8');
+  config = JSON.parse(configData);
+} catch (error) {
+  console.error('Failed to load config file, using defaults:', error);
+  // Default fallback values
+  config = {
+    rateLimit: {
+      maxRequests: 15000,
+      timeWindowMs: 10000,
+      pauseDurationMs: 3000
+    },
+    server: {
+      bindIp: '0.0.0.0',
+      bindPort: 3478
+    }
+  };
+}
+// Use config values
+const BIND_IP = config.server.bindIp;
+const BIND_PORT = config.server.bindPort;
+const RATE_LIMIT_MAX_REQUESTS = config.rateLimit.maxRequests;
+const RATE_LIMIT_TIME_WINDOW_MS = config.rateLimit.timeWindowMs;
+const RATE_LIMIT_PAUSE_DURATION_MS = config.rateLimit.pauseDurationMs;
 
 const STUN_MAGIC_COOKIE = 0x2112A442;
 const STUN_BINDING_REQUEST = 0x0001;
@@ -26,12 +51,23 @@ class RateLimiter {
   private readonly timeWindow: number;
   private readonly pauseDuration: number;
 
-  constructor(maxRequests = 300, timeWindowMs = 10000, pauseDurationMs = 3000) {
+  constructor(maxRequests: number, timeWindowMs: number, pauseDurationMs: number) {
+    // Validate inputs
+    if (maxRequests <= 0) {
+      throw new Error('maxRequests must be greater than 0');
+    }
+    if (timeWindowMs <= 0) {
+      throw new Error('timeWindowMs must be greater than 0');
+    }
+    if (pauseDurationMs <= 0) {
+      throw new Error('pauseDurationMs must be greater than 0');
+    }
+
     this.maxRequests = maxRequests;
     this.timeWindow = timeWindowMs;
     this.pauseDuration = pauseDurationMs;
   }
-
+  
   public check(): boolean {
     if (this.isPaused) return false;
     const now = Date.now();
@@ -130,7 +166,12 @@ function createStunResponse(type: number, transactionId: Buffer, attributes: Buf
 
 // --- Main Server Logic ---
 const server = dgram.createSocket('udp4');
-const limiter = new RateLimiter(30, 10000, 3000);
+const limiter = new RateLimiter(
+  RATE_LIMIT_MAX_REQUESTS,
+  RATE_LIMIT_TIME_WINDOW_MS,
+  RATE_LIMIT_PAUSE_DURATION_MS
+);
+console.log(`[${getTimestamp()}] Loaded config: ${RATE_LIMIT_MAX_REQUESTS} requests per ${RATE_LIMIT_TIME_WINDOW_MS/1000}s, ${RATE_LIMIT_PAUSE_DURATION_MS/1000}s pause`);
 
 server.on('message', (msg: Buffer, rinfo: RemoteInfo) => {
   // 1. Rate Limiting
