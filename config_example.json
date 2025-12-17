@@ -1,0 +1,12 @@
+// config.json
+{
+  "rateLimit": {
+    "maxRequests": 15000,
+    "timeWindowMs": 10000,
+    "pauseDurationMs": 3000
+  },
+  "server": {
+    "bindIp": "0.0.0.0",
+    "bindPort": 3478
+  }
+}
