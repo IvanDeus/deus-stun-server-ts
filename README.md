@@ -7,6 +7,13 @@ Ensure you have [Bun](https://bun.sh) installed:
 curl -fsSL https://bun.sh/install | bash
 ```
 
+## Configure
+Copy and edit config.json
+```
+cp config_example.json config.json
+nano config.json
+```
+
 ## Running the STUN Server  
 Start the server with:  
 ```bash
