@@ -36,6 +36,9 @@ const STUN_MAGIC_COOKIE = 0x2112A442;
 const STUN_BINDING_REQUEST = 0x0001;
 const STUN_BINDING_RESPONSE = 0x0101;
 const STUN_ATTR_XOR_MAPPED_ADDRESS = 0x0020;
+
+const LOG_DEBOUNCE_MS = 5000;
+const lastLogTime = new Map<string, number>();
 // --- Types ---
 interface ParsedStunMessage {
   type: number;
@@ -193,12 +196,18 @@ server.on('message', (msg: Buffer, rinfo: RemoteInfo) => {
   const xorAttr = createXorMappedAddress(family, rinfo.port, rinfo.address, parsed.transactionId);
   // 4. Create Response
   const response = createStunResponse(STUN_BINDING_RESPONSE, parsed.transactionId, [xorAttr]);
-  // 5. Send
+  // 5. Send 
   server.send(response, rinfo.port, rinfo.address, (err) => {
     if (err) {
       console.error(`[${getTimestamp()}] Error sending response:`, err);
     } else {
-      console.log(`[${getTimestamp()}] Sent Binding Response to ${rinfo.address}:${rinfo.port}`);
+      const now = Date.now();
+      const lastLog = lastLogTime.get(rinfo.address);
+      
+      if (!lastLog || (now - lastLog) > LOG_DEBOUNCE_MS) {
+        console.log(`[${getTimestamp()}] Sent Binding Response to ${rinfo.address}:${rinfo.port}`);
+        lastLogTime.set(rinfo.address, now);
+      }
     }
   });
 });
