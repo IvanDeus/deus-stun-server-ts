@@ -108,7 +108,7 @@ class RateLimiter {
 
 // --- Helper Functions ---
 function getTimestamp(): string {
-  return new Date().toLocaleString('en-US');
+  return new Date().toLocaleString('en-GB', { timeZone: 'Europe/Moscow' });
 }
 
 function parseStunMessage(data: Buffer): ParsedStunMessage | null {
