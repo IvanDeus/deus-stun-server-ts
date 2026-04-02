@@ -2,29 +2,20 @@
 //rate limit 15000 requests per 10 sec and 3 sec cool down
 import dgram from 'node:dgram';
 import type { RemoteInfo } from 'node:dgram';
-import fs from 'node:fs';
-import path from 'node:path';
 // --- Load Configuration ---
 let config: any;
-try {
-  const configPath = path.join(__dirname, 'config.json');
-  const configData = fs.readFileSync(configPath, 'utf-8');
-  config = JSON.parse(configData);
-} catch (error) {
-  console.error('Failed to load config file, using defaults:', error);
-  // Default fallback values
-  config = {
+// .env values
+config = {
     rateLimit: {
-      maxRequests: 15000,
-      timeWindowMs: 10000,
-      pauseDurationMs: 3000
+      maxRequests: Bun.env.maxRequests,
+      timeWindowMs: Bun.env.timeWindowMs,
+      pauseDurationMs: Bun.env.pauseDurationMs
     },
     server: {
-      bindIp: '0.0.0.0',
-      bindPort: 3478
+      bindIp: Bun.env.bindIp,
+      bindPort: Bun.env.bindPort
     }
   };
-}
 // Use config values
 const BIND_IP = config.server.bindIp;
 const BIND_PORT = config.server.bindPort;
