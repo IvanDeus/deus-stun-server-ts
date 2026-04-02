@@ -27,9 +27,10 @@ const STUN_MAGIC_COOKIE = 0x2112A442;
 const STUN_BINDING_REQUEST = 0x0001;
 const STUN_BINDING_RESPONSE = 0x0101;
 const STUN_ATTR_XOR_MAPPED_ADDRESS = 0x0020;
+// Track when each host was first logged
+const LOGGED_HOSTS_RESET_MS = 60 * 60 * 1000; // 1 hour
+const loggedHosts = new Map<string, number>(); 
 
-const LOG_DEBOUNCE_MS = 5000;
-const lastLogTime = new Map<string, number>();
 // --- Types ---
 interface ParsedStunMessage {
   type: number;
@@ -37,6 +38,7 @@ interface ParsedStunMessage {
   transactionId: Buffer;
   attributes: Buffer;
 }
+
 // --- Rate Limiter Class ---
 class RateLimiter {
   private timestamps: number[] = [];
@@ -158,6 +160,19 @@ function createStunResponse(type: number, transactionId: Buffer, attributes: Buf
   return Buffer.concat([header, attrBuf]);
 }
 
+// Clean up expired host entries periodically
+function cleanupLoggedHosts(): void {
+  const now = Date.now();
+  for (const [host, timestamp] of loggedHosts.entries()) {
+    if (now - timestamp >= LOGGED_HOSTS_RESET_MS) {
+      loggedHosts.delete(host);
+    }
+  }
+}
+
+// Run cleanup every 5 minutes
+setInterval(cleanupLoggedHosts, 5 * 60 * 1000);
+
 // --- Main Server Logic ---
 const server = dgram.createSocket('udp4');
 const limiter = new RateLimiter(
@@ -166,6 +181,7 @@ const limiter = new RateLimiter(
   RATE_LIMIT_PAUSE_DURATION_MS
 );
 console.log(`[${getTimestamp()}] Loaded config: ${RATE_LIMIT_MAX_REQUESTS} requests per ${RATE_LIMIT_TIME_WINDOW_MS/1000}s, ${RATE_LIMIT_PAUSE_DURATION_MS/1000}s pause`);
+console.log(`[${getTimestamp()}] Host logging resets after ${LOGGED_HOSTS_RESET_MS / (60 * 60 * 1000)} hour(s)`);
 
 server.on('message', (msg: Buffer, rinfo: RemoteInfo) => {
   // 1. Rate Limiting
@@ -192,12 +208,14 @@ server.on('message', (msg: Buffer, rinfo: RemoteInfo) => {
     if (err) {
       console.error(`[${getTimestamp()}] Error sending response:`, err);
     } else {
+      // Log only once per host, resetting after 1 hour
       const now = Date.now();
-      const lastLog = lastLogTime.get(rinfo.address);
+      const firstLogTime = loggedHosts.get(rinfo.address);
       
-      if (!lastLog || (now - lastLog) > LOG_DEBOUNCE_MS) {
+      if (!firstLogTime) {
+        // First time seeing this host in current cycle
         console.log(`[${getTimestamp()}] Sent Binding Response to ${rinfo.address}:${rinfo.port}`);
-        lastLogTime.set(rinfo.address, now);
+        loggedHosts.set(rinfo.address, now);
       }
     }
   });
