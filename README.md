@@ -8,10 +8,10 @@ curl -fsSL https://bun.sh/install | bash
 ```
 
 ## Configure
-Copy and edit config.json
+Copy and edit config dotenv-example
 ```
-cp config_example.json config.json
-nano config.json
+cp dotenv-example .env
+nano .env
 ```
 
 ## Running the STUN Server  
