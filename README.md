@@ -44,6 +44,10 @@ Then start the service:
 pm2 start ecosystem.config.js
 ```
 
+Or just run:
+```
+pm2 start stun-server.ts --name stun-server
+```
 ---
 
 2025 [ ivan deus ]
