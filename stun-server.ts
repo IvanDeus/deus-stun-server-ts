@@ -1,5 +1,5 @@
 //stun-server.ts
-//rate limit 15000 requests per 10 sec and 3 sec cool down
+import './logger';
 import dgram from 'node:dgram';
 import type { RemoteInfo } from 'node:dgram';
 // --- Load Configuration ---
@@ -89,21 +89,17 @@ class RateLimiter {
 
   private triggerPause() {
     this.isPaused = true;
-    console.warn(`[${getTimestamp()}] Rate limit exceeded. Pausing for ${this.pauseDuration / 1000}s.`);
+    console.warn(`Rate limit exceeded. Pausing for ${this.pauseDuration / 1000}s.`);
     
     setTimeout(() => {
       this.isPaused = false;
       this.timestamps = []; // Reset logic after pause
-      console.log(`[${getTimestamp()}] Resuming after pause.`);
+      console.log(`Resuming after pause.`);
     }, this.pauseDuration);
   }
 }
 
 // --- Helper Functions ---
-function getTimestamp(): string {
-  return new Date().toLocaleString('en-GB', { timeZone: 'Europe/Moscow' });
-}
-
 function parseStunMessage(data: Buffer): ParsedStunMessage | null {
   if (data.length < 20) return null;
 
@@ -180,22 +176,22 @@ const limiter = new RateLimiter(
   RATE_LIMIT_TIME_WINDOW_MS,
   RATE_LIMIT_PAUSE_DURATION_MS
 );
-console.log(`[${getTimestamp()}] Loaded config: ${RATE_LIMIT_MAX_REQUESTS} requests per ${RATE_LIMIT_TIME_WINDOW_MS/1000}s, ${RATE_LIMIT_PAUSE_DURATION_MS/1000}s pause`);
-console.log(`[${getTimestamp()}] Host logging resets after ${LOGGED_HOSTS_RESET_MS / (60 * 60 * 1000)} hour(s)`);
+console.log(`Loaded config: ${RATE_LIMIT_MAX_REQUESTS} requests per ${RATE_LIMIT_TIME_WINDOW_MS/1000}s, ${RATE_LIMIT_PAUSE_DURATION_MS/1000}s pause`);
+console.log(`Host logging resets after ${LOGGED_HOSTS_RESET_MS / (60 * 60 * 1000)} hour(s)`);
 
 server.on('message', (msg: Buffer, rinfo: RemoteInfo) => {
   // 1. Rate Limiting
   if (!limiter.check()) {
     // Only log the drop if we aren't already in a "paused" state to avoid log spam
     // or if you want to see every dropped packet:
-    console.log(`[${getTimestamp()}] Dropping ${rinfo.address}`);
+    console.log(`Dropping ${rinfo.address}`);
     return;
   }
   // 2. Parse Message
   const parsed = parseStunMessage(msg);
   // Validate STUN Binding Request
   if (!parsed || parsed.type !== STUN_BINDING_REQUEST) {
-    console.log(`[${getTimestamp()}] Invalid/Non-binding request from ${rinfo.address}:${rinfo.port}`);
+    console.log(`Invalid/Non-binding request from ${rinfo.address}:${rinfo.port}`);
     return;
   }
   // 3. Create Attribute (XOR-MAPPED-ADDRESS)
@@ -206,7 +202,7 @@ server.on('message', (msg: Buffer, rinfo: RemoteInfo) => {
   // 5. Send 
   server.send(response, rinfo.port, rinfo.address, (err) => {
     if (err) {
-      console.error(`[${getTimestamp()}] Error sending response:`, err);
+      console.error(`Error sending response:`, err);
     } else {
       // Log only once per host, resetting after 1 hour
       const now = Date.now();
@@ -214,7 +210,7 @@ server.on('message', (msg: Buffer, rinfo: RemoteInfo) => {
       
       if (!firstLogTime) {
         // First time seeing this host in current cycle
-        console.log(`[${getTimestamp()}] Sent Binding Response to ${rinfo.address}:${rinfo.port}`);
+        console.log(`Sent Binding Response to ${rinfo.address}:${rinfo.port}`);
         loggedHosts.set(rinfo.address, now);
       }
     }
@@ -222,10 +218,10 @@ server.on('message', (msg: Buffer, rinfo: RemoteInfo) => {
 });
 
 server.on('error', (err) => {
-  console.error(`[${getTimestamp()}] Server fatal error:`, err);
+  console.error(`Server fatal error:`, err);
   server.close();
 });
 
 server.bind(BIND_PORT, BIND_IP, () => {
-  console.log(`[${getTimestamp()}] STUN server running with Bun on ${BIND_IP}:${BIND_PORT}`);
+  console.log(`STUN server running with Bun on ${BIND_IP}:${BIND_PORT}`);
 });
