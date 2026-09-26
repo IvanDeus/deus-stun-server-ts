@@ -1,5 +1,6 @@
+LOG_TZ=Europe/Berlin
+bindIp="0.0.0.0"
+bindPort="3478"
 maxRequests="15000"
 timeWindowMs="10000"
 pauseDurationMs="3000"
-bindIp="0.0.0.0"
-bindPort="3478"
